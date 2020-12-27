@@ -1,4 +1,17 @@
-import { Controller, Get, Post, Body, UseGuards, UseInterceptors, Param, NotFoundException, Put, Delete, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  UseInterceptors,
+  Param,
+  NotFoundException,
+  Put,
+  Delete,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { ArticleService } from './article.service';
 import { JwtAuthGuard } from '../user/auth/jwt.auth-guard';
@@ -10,133 +23,148 @@ import { JwtModule } from '@nestjs/jwt';
 @UseInterceptors(Neo4jTypeInterceptor)
 @Controller('articles')
 export class ArticleController {
+  constructor(private readonly articleService: ArticleService) {}
 
-    constructor(private readonly articleService: ArticleService) {}
+  @UseGuards(JwtAuthGuard.optional())
+  @Get()
+  getList() {
+    Logger.log('getList', 'ArticleController');
 
-    @UseGuards(JwtAuthGuard.optional())
-    @Get()
-    getList() {
-        return this.articleService.list()
-    }
+    return this.articleService.list();
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Post()
-    async postList(@Body() createArticleDto: CreateArticleDto) {
-        const article = await this.articleService.create(
-            createArticleDto.article.title,
-            createArticleDto.article.description,
-            createArticleDto.article.body,
-            createArticleDto.article.tagList
-        )
+  @UseGuards(JwtAuthGuard)
+  @Post()
+  async postList(@Body() createArticleDto: CreateArticleDto) {
+    const article = await this.articleService.create(
+      createArticleDto.article.title,
+      createArticleDto.article.description,
+      createArticleDto.article.body,
+      createArticleDto.article.tagList,
+    );
 
-        return {
-            article: article.toJson()
-        }
-    }
+    return {
+      article: article.toJson(),
+    };
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Get('/feed')
-    async getFeed() {
-        return this.articleService.getFeed()
-    }
+  @UseGuards(JwtAuthGuard)
+  @Get('/feed')
+  async getFeed() {
+    return this.articleService.getFeed();
+  }
 
-    @UseGuards(JwtAuthGuard.optional())
-    @Get('/:slug')
-    async getIndex(@Param('slug') slug: string) {
-        const article = await this.articleService.find(slug)
+  @UseGuards(JwtAuthGuard.optional())
+  @Get('/:slug')
+  async getIndex(@Param('slug') slug: string) {
+    const article = await this.articleService.find(slug);
 
-        if ( !article ) throw new NotFoundException()
+    if (!article) throw new NotFoundException();
 
-        return {
-            article: article.toJson()
-        }
-    }
+    return {
+      article: article.toJson(),
+    };
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Put('/:slug')
-    async putIndex(@Param('slug') slug: string, @Body() updateArticleDto: UpdateArticleDto) {
-        const article = await this.articleService.update(slug, updateArticleDto.article)
+  @UseGuards(JwtAuthGuard)
+  @Put('/:slug')
+  async putIndex(
+    @Param('slug') slug: string,
+    @Body() updateArticleDto: UpdateArticleDto,
+  ) {
+    const article = await this.articleService.update(
+      slug,
+      updateArticleDto.article,
+    );
 
-        if ( !article ) throw new NotFoundException()
+    if (!article) throw new NotFoundException();
 
-        return {
-            article: article.toJson()
-        }
-    }
+    return {
+      article: article.toJson(),
+    };
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Put('/:slug')
-    async deleteIndex(@Param('slug') slug: string) {
-        const article = await this.articleService.delete(slug)
+  @UseGuards(JwtAuthGuard)
+  @Put('/:slug')
+  async deleteIndex(@Param('slug') slug: string) {
+    const article = await this.articleService.delete(slug);
 
-        if ( !article ) throw new NotFoundException()
+    if (!article) throw new NotFoundException();
 
-        return 'OK'
-    }
+    return 'OK';
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Post('/:slug/favorite')
-    async postFavorite(@Param('slug') slug: string) {
-        const article = await this.articleService.favorite(slug)
+  @UseGuards(JwtAuthGuard)
+  @Post('/:slug/favorite')
+  async postFavorite(@Param('slug') slug: string) {
+    const article = await this.articleService.favorite(slug);
 
-        if ( !article ) throw new NotFoundException()
+    if (!article) throw new NotFoundException();
 
-        return {
-            article: article.toJson()
-        }
-    }
+    return {
+      article: article.toJson(),
+    };
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Delete('/:slug/favorite')
-    async deleteFavorite(@Param('slug') slug: string) {
-        const article = await this.articleService.unfavorite(slug)
+  @UseGuards(JwtAuthGuard)
+  @Delete('/:slug/favorite')
+  async deleteFavorite(@Param('slug') slug: string) {
+    const article = await this.articleService.unfavorite(slug);
 
-        if ( !article ) throw new NotFoundException()
+    if (!article) throw new NotFoundException();
 
-        return {
-            article: article.toJson()
-        }
-    }
+    return {
+      article: article.toJson(),
+    };
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Post('/:slug/comments')
-    async postComments(@Param('slug') slug: string, @Body() createCommentDto: CreateCommentDto) {
-        const comment = await this.articleService.comment(slug, createCommentDto.comment.body)
+  @UseGuards(JwtAuthGuard)
+  @Post('/:slug/comments')
+  async postComments(
+    @Param('slug') slug: string,
+    @Body() createCommentDto: CreateCommentDto,
+  ) {
+    const comment = await this.articleService.comment(
+      slug,
+      createCommentDto.comment.body,
+    );
 
-        if ( !comment ) throw new NotFoundException()
+    if (!comment) throw new NotFoundException();
 
-        return {
-            comment: comment.toJson()
-        }
-    }
+    return {
+      comment: comment.toJson(),
+    };
+  }
 
-    @Get('/:slug/comments')
-    async getComments(@Param('slug') slug: string) {
-        const comments = await this.articleService.getComments(slug)
+  @Get('/:slug/comments')
+  async getComments(@Param('slug') slug: string) {
+    const comments = await this.articleService.getComments(slug);
 
-        return {
-            comments: comments.map(comment => comment.toJson()),
-        }
-    }
+    return {
+      comments: comments.map(comment => comment.toJson()),
+    };
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Delete('/:slug/comments/:commentId')
-    async deleteComments(@Param('slug') slug: string, @Param('commentId') commentId: string) {
-        const outcome = await this.articleService.deleteComment(slug, commentId)
+  @UseGuards(JwtAuthGuard)
+  @Delete('/:slug/comments/:commentId')
+  async deleteComments(
+    @Param('slug') slug: string,
+    @Param('commentId') commentId: string,
+  ) {
+    const outcome = await this.articleService.deleteComment(slug, commentId);
 
-        if ( !outcome ) throw new NotFoundException()
+    if (!outcome) throw new NotFoundException();
 
-        return 'OK'
-    }
+    return 'OK';
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Delete('/:slug')
-    async deleteComment(@Param('slug') slug: string) {
-        const comment = await this.articleService.delete(slug)
+  @UseGuards(JwtAuthGuard)
+  @Delete('/:slug')
+  async deleteComment(@Param('slug') slug: string) {
+    const comment = await this.articleService.delete(slug);
 
-        if ( !comment ) throw new NotFoundException()
+    if (!comment) throw new NotFoundException();
 
-        return 'OK'
-    }
-
+    return 'OK';
+  }
 }

@@ -1,12 +1,18 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
 import { UnprocessibleEntityValidationPipe } from './pipes/unprocessible-entity-validation.pipe';
+import { Neo4jErrorFilter, Neo4jTypeInterceptor } from 'nest-neo4j/dist';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes( new UnprocessibleEntityValidationPipe() );
-  app.enableCors()
+
+  app.useGlobalPipes(new UnprocessibleEntityValidationPipe());
+  app.useGlobalInterceptors(new Neo4jTypeInterceptor());
+
+  // Use the Neo4j Error Filter on all rooutes
+  app.useGlobalFilters(new Neo4jErrorFilter());
+
+  app.enableCors();
   await app.listen(3000);
 }
 bootstrap();
