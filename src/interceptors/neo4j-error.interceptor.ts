@@ -6,12 +6,21 @@
 import { ExceptionFilter, Catch, ArgumentsHost } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { Neo4jError } from 'neo4j-driver';
+
+/**
+ *
+ */
 @Catch(Neo4jError)
 export class Neo4jErrorFilter implements ExceptionFilter {
+  /**
+   *
+   * @param exception
+   * @param host
+   */
   catch(exception: Neo4jError, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    // const request = ctx.getRequest<Request>();
 
     let statusCode = 500;
     let error = 'Internal Server Error';
@@ -25,7 +34,6 @@ export class Neo4jErrorFilter implements ExceptionFilter {
       const [label, property] = exception.message.match(/`([a-z0-9]+)`/gi);
       message = [`${property.replace(/`/g, '')} already taken`];
     }
-
     // Neo.ClientError.Schema.ConstraintValidationFailed
     // Node(54778) with label `Test` must have the property `mustExist`
     else if (exception.message.includes('must have the property')) {
@@ -33,6 +41,14 @@ export class Neo4jErrorFilter implements ExceptionFilter {
       error = 'Bad Request';
       const [label, property] = exception.message.match(/`([a-z0-9]+)`/gi);
       message = [`${property.replace(/`/g, '')} should not be empty`];
+    }
+    //
+    else if (exception.message.includes('mismatch')) {
+      statusCode = 400;
+      error = 'Bad Request';
+      // const [label, property] = exception.message.match(/`([a-z0-9]+)`/gi);
+      // message = [`${property.replace(/`/g, '')} type mismatch`];
+      message = [exception.message];
     }
 
     response.status(statusCode).json({
